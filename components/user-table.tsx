@@ -67,6 +67,7 @@ export function UserTable() {
   const [activeTab, setActiveTab] = useState<"insights" | "library" | "feedback">("insights");
   const [insightLanguage, setInsightLanguage] = useState<"en" | "hi">("en");
   const [expandedInsightKey, setExpandedInsightKey] = useState<string | null>(null);
+  const [selectedInsightId, setSelectedInsightId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<"firstName" | "email" | "language" | "state" | "age">(
     "firstName"
   );
@@ -162,6 +163,93 @@ export function UserTable() {
       return bDate - aDate;
     });
   }, [selectedUserDetail.dailyRatings, selectedUserDetail.insightFeedback, selectedUserDetail.exitFeedback]);
+
+  const parsedInsights = useMemo(() => {
+    return selectedUserDetail.dailyInsights.map((insight) => {
+      const aiDashboard = insight.aiDashboard as
+        | {
+            overall_dashboard?: {
+              overall_score?: number;
+              overall_reading_en?: string;
+              overall_reading_hi?: string;
+              lucky_color_en?: string;
+              lucky_color_hi?: string;
+              lucky_number?: number | string | Array<number | string>;
+            };
+            categories?: Record<
+              string,
+              {
+                score?: number;
+                reading_en?: string;
+                reading_hi?: string;
+              }
+            >;
+          }
+        | undefined;
+      const overall = aiDashboard?.overall_dashboard;
+      const categories = aiDashboard?.categories ?? {};
+      return {
+        id: insight.id,
+        date: insight.date || "Unknown date",
+        luckyColor:
+          insight.lucky_color ??
+          overall?.lucky_color_en ??
+          insight.lucky_color_hi ??
+          overall?.lucky_color_hi ??
+          "-",
+        luckyNumbers: formatLuckyNumbers(insight.lucky_number ?? overall?.lucky_number),
+        sections: [
+          {
+            key: "overall",
+            title: "Overall",
+            score: overall?.overall_score,
+            reading_en: overall?.overall_reading_en,
+            reading_hi: overall?.overall_reading_hi,
+          },
+          {
+            key: "career",
+            title: "Career",
+            score: categories.career?.score,
+            reading_en: categories.career?.reading_en,
+            reading_hi: categories.career?.reading_hi,
+          },
+          {
+            key: "relationships",
+            title: "Relationships",
+            score: (categories.relationships ?? categories.relationship)?.score,
+            reading_en: (categories.relationships ?? categories.relationship)?.reading_en,
+            reading_hi: (categories.relationships ?? categories.relationship)?.reading_hi,
+          },
+          {
+            key: "health",
+            title: "Health",
+            score: categories.health?.score,
+            reading_en: categories.health?.reading_en,
+            reading_hi: categories.health?.reading_hi,
+          },
+          {
+            key: "finance",
+            title: "Finance",
+            score: (categories.finance ?? categories.finances)?.score,
+            reading_en: (categories.finance ?? categories.finances)?.reading_en,
+            reading_hi: (categories.finance ?? categories.finances)?.reading_hi,
+          },
+        ],
+      };
+    });
+  }, [selectedUserDetail.dailyInsights]);
+
+  useEffect(() => {
+    if (parsedInsights.length === 0) {
+      setSelectedInsightId(null);
+      setExpandedInsightKey(null);
+      return;
+    }
+    if (!selectedInsightId || !parsedInsights.some((insight) => insight.id === selectedInsightId)) {
+      setSelectedInsightId(parsedInsights[0].id);
+      setExpandedInsightKey(null);
+    }
+  }, [parsedInsights, selectedInsightId]);
 
   const requestSort = (key: typeof sortKey) => {
     if (sortKey === key) {
@@ -378,148 +466,97 @@ export function UserTable() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {selectedUserDetail.dailyInsights.length > 0 ? (
-                        <ul className="space-y-3">
-                          {selectedUserDetail.dailyInsights.map((insight, i) => {
-                            const aiDashboard = insight.aiDashboard as
-                              | {
-                                  overall_dashboard?: {
-                                    overall_score?: number;
-                                    overall_reading_en?: string;
-                                    overall_reading_hi?: string;
-                                    lucky_color_en?: string;
-                                    lucky_color_hi?: string;
-                                    lucky_number?: number | string | Array<number | string>;
-                                  };
-                                  categories?: Record<
-                                    string,
-                                    {
-                                      score?: number;
-                                      reading_en?: string;
-                                      reading_hi?: string;
-                                    }
-                                  >;
-                                }
-                              | undefined;
-                            const overall = aiDashboard?.overall_dashboard;
-                            const categories = aiDashboard?.categories ?? {};
+                      {parsedInsights.length > 0 ? (
+                        <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
+                          <div className="space-y-2">
+                            {parsedInsights.map((insight) => {
+                              const selected = selectedInsightId === insight.id;
+                              return (
+                                <button
+                                  key={insight.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedInsightId(insight.id);
+                                    setExpandedInsightKey(null);
+                                  }}
+                                  className={`w-full rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                                    selected
+                                      ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-100"
+                                      : "border-slate-700/60 bg-slate-900/70 text-slate-300 hover:border-slate-600 hover:bg-slate-900"
+                                  }`}
+                                >
+                                  <p className="text-sm font-medium">{insight.date}</p>
+                                </button>
+                              );
+                            })}
+                          </div>
 
-                            const categoryRows = [
-                              {
-                                key: "overall",
-                                title: "Overall",
-                                score: overall?.overall_score,
-                                reading_en: overall?.overall_reading_en,
-                                reading_hi: overall?.overall_reading_hi,
-                              },
-                              {
-                                key: "career",
-                                title: "Career",
-                                score: categories.career?.score,
-                                reading_en: categories.career?.reading_en,
-                                reading_hi: categories.career?.reading_hi,
-                              },
-                              {
-                                key: "relationships",
-                                title: "Relationships",
-                                score: (categories.relationships ?? categories.relationship)?.score,
-                                reading_en: (categories.relationships ?? categories.relationship)?.reading_en,
-                                reading_hi: (categories.relationships ?? categories.relationship)?.reading_hi,
-                              },
-                              {
-                                key: "health",
-                                title: "Health",
-                                score: categories.health?.score,
-                                reading_en: categories.health?.reading_en,
-                                reading_hi: categories.health?.reading_hi,
-                              },
-                              {
-                                key: "finance",
-                                title: "Finance",
-                                score: (categories.finance ?? categories.finances)?.score,
-                                reading_en: (categories.finance ?? categories.finances)?.reading_en,
-                                reading_hi: (categories.finance ?? categories.finances)?.reading_hi,
-                              },
-                            ];
-
-                            return (
-                              <motion.li
-                                key={insight.id}
-                                initial={{ opacity: 0, y: 6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: Math.min(i * 0.03, 0.18), ...springSoft }}
-                                className="rounded-lg border border-slate-700/50 bg-slate-900 p-3"
-                              >
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <p className="text-sm font-medium text-slate-200">
-                                    {insight.date || "Unknown date"}
-                                  </p>
-                                  <div className="flex items-center gap-2">
-                                    {typeof overall?.overall_score === "number" ? (
-                                      <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 text-[0.68rem] font-medium text-indigo-200">
-                                        Score {overall.overall_score}
-                                      </span>
-                                    ) : null}
-                                    <span className="rounded-full border border-slate-700/60 bg-slate-800/80 px-2 py-0.5 text-[0.68rem] font-medium text-slate-300">
-                                      Insight
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-slate-400 sm:grid-cols-2">
-                                  <p>
-                                    <span className="font-semibold text-slate-300">Lucky color:</span>{" "}
-                                    {insight.lucky_color ??
-                                      overall?.lucky_color_en ??
-                                      insight.lucky_color_hi ??
-                                      overall?.lucky_color_hi ??
-                                      "-"}
-                                  </p>
-                                  <p>
-                                    <span className="font-semibold text-slate-300">Lucky numbers:</span>{" "}
-                                    {formatLuckyNumbers(insight.lucky_number ?? overall?.lucky_number)}
-                                  </p>
-                                </div>
-                                <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-                                  {categoryRows.map((section) => {
-                                    const rowKey = `${insight.id}:${section.key}`;
-                                    const isOpen = expandedInsightKey === rowKey;
-                                    const reading =
-                                      insightLanguage === "en" ? section.reading_en : section.reading_hi;
-                                    return (
-                                      <div
-                                        key={rowKey}
-                                        className="rounded-lg border border-slate-700/50 bg-slate-950/70 p-3"
-                                      >
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            setExpandedInsightKey((prev) => (prev === rowKey ? null : rowKey))
-                                          }
-                                          className="flex w-full items-center justify-between gap-2 text-left"
-                                        >
-                                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                            {section.title}
-                                          </p>
-                                          <div className="flex items-center gap-2">
-                                            {typeof section.score === "number" ? (
-                                              <span className="rounded-full border border-slate-700/60 bg-slate-800/80 px-2 py-0.5 text-[0.68rem] font-medium text-slate-300">
-                                                {section.score}
-                                              </span>
-                                            ) : null}
-                                            <span className="text-xs text-slate-500">{isOpen ? "Hide" : "Show"}</span>
-                                          </div>
-                                        </button>
-                                        {isOpen ? (
-                                          <p className="mt-2 text-sm text-slate-300">{reading ?? "-"}</p>
-                                        ) : null}
+                          {selectedInsightId ? (
+                            <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-3">
+                              {(() => {
+                                const selectedInsight = parsedInsights.find((it) => it.id === selectedInsightId);
+                                if (!selectedInsight) return null;
+                                return (
+                                  <div className="space-y-3">
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                      <div className="rounded-lg border border-slate-700/60 bg-slate-950/70 px-3 py-2">
+                                        <p className="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">
+                                          Lucky color
+                                        </p>
+                                        <p className="mt-1 text-sm font-medium text-slate-200">
+                                          {selectedInsight.luckyColor}
+                                        </p>
                                       </div>
-                                    );
-                                  })}
-                                </div>
-                              </motion.li>
-                            );
-                          })}
-                        </ul>
+                                      <div className="rounded-lg border border-slate-700/60 bg-slate-950/70 px-3 py-2">
+                                        <p className="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">
+                                          Lucky numbers
+                                        </p>
+                                        <p className="mt-1 text-sm font-medium text-slate-200">
+                                          {selectedInsight.luckyNumbers}
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                      {selectedInsight.sections.map((section) => {
+                                        const rowKey = `${selectedInsight.id}:${section.key}`;
+                                        const isOpen = expandedInsightKey === rowKey;
+                                        const reading =
+                                          insightLanguage === "en" ? section.reading_en : section.reading_hi;
+                                        return (
+                                          <div
+                                            key={rowKey}
+                                            className="rounded-lg border border-slate-700/60 bg-slate-950/70 p-3"
+                                          >
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                setExpandedInsightKey((prev) => (prev === rowKey ? null : rowKey))
+                                              }
+                                              className="flex w-full items-center justify-between gap-2 text-left"
+                                            >
+                                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                                {section.title}
+                                              </p>
+                                              <span className="rounded-full border border-slate-700/70 bg-slate-800/80 px-2 py-0.5 text-[0.68rem] font-medium text-slate-300">
+                                                {typeof section.score === "number" ? section.score : "-"}
+                                              </span>
+                                            </button>
+                                            {isOpen ? (
+                                              <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                                                {reading ?? "-"}
+                                              </p>
+                                            ) : null}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          ) : null}
+                        </div>
                       ) : (
                         <p className="py-10 text-center text-sm text-slate-500">No Daily Insights Yet</p>
                       )}
