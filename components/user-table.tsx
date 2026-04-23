@@ -49,6 +49,14 @@ function formatDateTime(value: unknown): string {
     : "";
 }
 
+function formatLuckyNumbers(value: unknown): string {
+  if (!Array.isArray(value)) return "-";
+  const nums = value
+    .map((n) => (typeof n === "number" || typeof n === "string" ? String(n) : ""))
+    .filter(Boolean);
+  return nums.length ? nums.join(", ") : "-";
+}
+
 export function UserTable() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -113,7 +121,6 @@ export function UserTable() {
     });
   }, [users, search, sortKey, sortOrder]);
 
-  const latestInsight = selectedUserDetail.dailyInsights[0];
   const userLocation = extractState(selectedUserDetail.user?.location?.name ?? "") || "Unknown";
   const initials =
     selectedUserDetail.user?.firstName
@@ -341,22 +348,49 @@ export function UserTable() {
                 >
                   <Card className="transition-shadow duration-300">
                     <CardHeader>
-                      <CardTitle>Today&apos;s Reading</CardTitle>
+                      <CardTitle>All Insights</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {latestInsight ? (
-                        <>
-                          <p className="text-sm text-slate-300">Date: {latestInsight.date}</p>
-                          <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.08 }}
-                            className="rounded-lg border border-slate-700/50 bg-slate-900 p-3 text-sm text-slate-300"
-                          >
-                            {(latestInsight.aiDashboard as { overall_dashboard?: { overall_reading_en?: string } })
-                              ?.overall_dashboard?.overall_reading_en ?? "Latest insight is available."}
-                          </motion.p>
-                        </>
+                      {selectedUserDetail.dailyInsights.length > 0 ? (
+                        <ul className="space-y-3">
+                          {selectedUserDetail.dailyInsights.map((insight, i) => {
+                            const overallReading = (
+                              insight.aiDashboard as { overall_dashboard?: { overall_reading_en?: string } } | undefined
+                            )?.overall_dashboard?.overall_reading_en;
+
+                            return (
+                              <motion.li
+                                key={insight.id}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: Math.min(i * 0.03, 0.18), ...springSoft }}
+                                className="rounded-lg border border-slate-700/50 bg-slate-900 p-3"
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p className="text-sm font-medium text-slate-200">
+                                    {insight.date || "Unknown date"}
+                                  </p>
+                                  <span className="rounded-full border border-slate-700/60 bg-slate-800/80 px-2 py-0.5 text-[0.68rem] font-medium text-slate-300">
+                                    Insight
+                                  </span>
+                                </div>
+                                <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-slate-400 sm:grid-cols-2">
+                                  <p>
+                                    <span className="font-semibold text-slate-300">Lucky color:</span>{" "}
+                                    {insight.lucky_color ?? insight.lucky_color_hi ?? "-"}
+                                  </p>
+                                  <p>
+                                    <span className="font-semibold text-slate-300">Lucky numbers:</span>{" "}
+                                    {formatLuckyNumbers(insight.lucky_number)}
+                                  </p>
+                                </div>
+                                <p className="mt-2 rounded-lg border border-slate-700/50 bg-slate-950/70 p-2.5 text-sm text-slate-300">
+                                  {overallReading ?? "Insight content available in dashboard payload."}
+                                </p>
+                              </motion.li>
+                            );
+                          })}
+                        </ul>
                       ) : (
                         <p className="py-10 text-center text-sm text-slate-500">No Daily Insights Yet</p>
                       )}

@@ -306,14 +306,6 @@ export function DashboardCharts({ stateData, ageData, notificationTimeData }: Pr
             <CardTitle className="text-[0.8125rem] font-medium uppercase tracking-wide text-slate-400">
               Notification time preferences
             </CardTitle>
-            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-500">
-              Sorted by users. <span className="text-slate-400">Share</span> is that row’s percentage
-              of everyone in the list—large and tiny segments stay legible side by side.
-            </p>
-            <p className="mt-1.5 text-[0.65rem] text-slate-600">
-              <span className="font-mono text-slate-500">notificationTimeSlot</span>: 0–23 → HH:00;
-              other → Slot N; missing → Not set.
-            </p>
           </CardHeader>
           <CardContent className="shrink-0 p-4 pt-2">
             {notificationTimeData.length === 0 ? (
