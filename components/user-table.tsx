@@ -84,6 +84,7 @@ export function UserTable() {
   const [selectedInsightId, setSelectedInsightId] = useState<string | null>(null);
   const [savedReadingLanguage, setSavedReadingLanguage] = useState<"en" | "hi">("en");
   const [selectedSavedReadingId, setSelectedSavedReadingId] = useState<string | null>(null);
+  const [feedbackFilter, setFeedbackFilter] = useState<"all" | "rating" | "insight" | "exit">("all");
   const [sortKey, setSortKey] = useState<"firstName" | "email" | "language" | "state" | "age">(
     "firstName"
   );
@@ -155,23 +156,27 @@ export function UserTable() {
       type: "rating" as const,
       createdAt: rating.createdAt,
       label: `Daily Rating ${rating.rating}/5`,
-      subLabel: rating.promptType,
+      subLabel: `Prompt: ${rating.promptType || "-"}`,
     }));
     const feedback = selectedUserDetail.insightFeedback.map((item) => ({
       id: `insight-${item.id}`,
       type: "insight" as const,
       createdAt: item.updatedAt,
       label: "Insight Feedback",
-      subLabel: `Career:${item.Career ?? "-"} Health:${item.Health ?? "-"} Finances:${
-        item.Finances ?? "-"
-      } Daily:${item.Daily ?? "-"}`,
+      subLabel: [
+        `Daily: ${item.Daily ?? "-"}`,
+        `Relationships: ${item.Relationships ?? "-"}`,
+        `Career: ${item.Career ?? "-"}`,
+        `Health: ${item.Health ?? "-"}`,
+        `Finance: ${item.Finances ?? "-"}`,
+      ].join(" • "),
     }));
     const exit = selectedUserDetail.exitFeedback.map((item) => ({
       id: `exit-${item.id}`,
       type: "exit" as const,
       createdAt: item.createdAt,
       label: "Exit Feedback",
-      subLabel: item.response,
+      subLabel: item.response === "not-helpful" ? "Not helpful" : "Helpful",
     }));
     return [...ratings, ...feedback, ...exit].sort((a, b) => {
       const aDate = toJSDate(a.createdAt)?.getTime() ?? 0;
@@ -179,6 +184,11 @@ export function UserTable() {
       return bDate - aDate;
     });
   }, [selectedUserDetail.dailyRatings, selectedUserDetail.insightFeedback, selectedUserDetail.exitFeedback]);
+
+  const filteredTimeline = useMemo(() => {
+    if (feedbackFilter === "all") return timeline;
+    return timeline.filter((entry) => entry.type === feedbackFilter);
+  }, [feedbackFilter, timeline]);
 
   const parsedInsights = useMemo(() => {
     return selectedUserDetail.dailyInsights.map((insight) => {
@@ -716,14 +726,37 @@ export function UserTable() {
                   transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <Card className="transition-shadow duration-300">
-                    <CardHeader>
+                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <CardTitle>Feedback Timeline</CardTitle>
+                      <div className="inline-flex items-center rounded-full border border-slate-700/70 bg-slate-900/70 p-1">
+                        {(
+                          [
+                            ["all", "All"],
+                            ["rating", "Ratings"],
+                            ["insight", "Insight"],
+                            ["exit", "Exit"],
+                          ] as const
+                        ).map(([key, label]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setFeedbackFilter(key)}
+                            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                              feedbackFilter === key
+                                ? "bg-indigo-500/20 text-indigo-200"
+                                : "text-slate-400 hover:text-slate-200"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {timeline.length === 0 ? (
+                      {filteredTimeline.length === 0 ? (
                         <p className="py-10 text-center text-sm text-slate-500">No Feedback Yet</p>
                       ) : (
-                        timeline.map((entry, i) => (
+                        filteredTimeline.map((entry, i) => (
                           <motion.div
                             key={entry.id}
                             initial={{ opacity: 0, y: 6 }}
@@ -732,7 +765,7 @@ export function UserTable() {
                             whileHover={{ scale: 1.01, transition: springSnappy }}
                             className="rounded-lg border border-slate-700/50 bg-slate-900 p-3"
                           >
-                            <div className="flex items-start gap-2">
+                            <div className="flex items-start gap-2.5">
                               {entry.type === "rating" ? (
                                 <Star className="mt-0.5 h-4 w-4 text-amber-300" />
                               ) : entry.type === "insight" ? (
@@ -740,10 +773,29 @@ export function UserTable() {
                               ) : (
                                 <MessageSquareText className="mt-0.5 h-4 w-4 text-indigo-300" />
                               )}
-                              <div>
-                                <p className="text-sm font-medium text-slate-200">{entry.label}</p>
-                                <p className="text-xs text-slate-400">{entry.subLabel}</p>
-                                <p className="text-xs text-slate-500">{formatDateTime(entry.createdAt)}</p>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p className="text-sm font-medium text-slate-200">{entry.label}</p>
+                                  <span
+                                    className={`rounded-full border px-2 py-0.5 text-[0.68rem] font-medium ${
+                                      entry.type === "rating"
+                                        ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+                                        : entry.type === "insight"
+                                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                                          : "border-indigo-500/30 bg-indigo-500/10 text-indigo-200"
+                                    }`}
+                                  >
+                                    {entry.type === "rating"
+                                      ? "Rating"
+                                      : entry.type === "insight"
+                                        ? "Insight"
+                                        : "Exit"}
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-xs leading-relaxed text-slate-400">{entry.subLabel}</p>
+                                <p className="mt-1.5 text-xs text-slate-500">
+                                  {formatDateTime(entry.createdAt)}
+                                </p>
                               </div>
                             </div>
                           </motion.div>
