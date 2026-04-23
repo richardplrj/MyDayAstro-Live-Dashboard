@@ -182,7 +182,6 @@ export function useDashboardStats(): DashboardStatsResult {
     const unsubUsers = onSnapshot(
       collection(db, "users"),
       (snapshot) => {
-        setError(null);
         setTotalUsers(snapshot.size);
 
         const statesCount = new Map<string, number>();
@@ -258,7 +257,6 @@ export function useDashboardStats(): DashboardStatsResult {
     const unsubSavedReadings = onSnapshot(
       collectionGroup(db, "saved_readings"),
       (snapshot) => {
-        setError(null);
         setTotalSavedReadings(snapshot.size);
         setSavedReadingsLoaded(true);
       },
@@ -271,7 +269,6 @@ export function useDashboardStats(): DashboardStatsResult {
     const unsubInsightFeedback = onSnapshot(
       collectionGroup(db, "insightFeedback"),
       (snapshot) => {
-        setError(null);
         const nextStats: FeedbackStats = { ...INITIAL_FEEDBACK_STATS };
         const totals: InsightFeedbackTotals = { ...INITIAL_INSIGHT_TOTALS };
 
@@ -305,7 +302,6 @@ export function useDashboardStats(): DashboardStatsResult {
     const unsubExitFeedback = onSnapshot(
       collectionGroup(db, "exitFeedback"),
       (snapshot) => {
-        setError(null);
         const totals: ExitFeedbackTotals = { helpful: 0, notHelpful: 0 };
         snapshot.docs.forEach((docSnap) => {
           const data = docSnap.data() as { response?: string };
@@ -317,7 +313,7 @@ export function useDashboardStats(): DashboardStatsResult {
         setExitFeedbackLoaded(true);
       },
       (snapshotError) => {
-        setError(normalizeFirestoreError(snapshotError));
+        setError(`Exit feedback stream failed: ${normalizeFirestoreError(snapshotError)}`);
         setExitFeedbackLoaded(true);
       }
     );

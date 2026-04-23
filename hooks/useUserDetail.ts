@@ -116,7 +116,6 @@ export function useUserDetail(userId: string): UserDetailResult {
       return onSnapshot(
         targetQuery,
         (snapshot) => {
-          setError(null);
           setter(
             snapshot.docs.map((docSnap) => ({
               id: docSnap.id,
@@ -135,7 +134,6 @@ export function useUserDetail(userId: string): UserDetailResult {
     const unsubUser = onSnapshot(
       userRef,
       (snapshot) => {
-        setError(null);
         setUser(snapshot.exists() ? (snapshot.data() as User) : null);
         setLoaded((prev) => ({ ...prev, user: true }));
       },
