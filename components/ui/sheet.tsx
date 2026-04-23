@@ -52,7 +52,7 @@ export function SheetContent({ open, onClose, children }: SheetContentProps) {
       animate={open ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.98, y: 12 }}
       transition={springSoft}
       className="fixed left-1/2 top-1/2 z-50 h-[min(86vh,820px)] w-[min(94vw,980px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-slate-700/60 bg-slate-950 p-6 shadow-2xl"
-      style={{ willChange: "transform, opacity" }}
+      style={{ willChange: "transform, opacity", pointerEvents: open ? "auto" : "none" }}
     >
       {onClose ? (
         <button
