@@ -65,6 +65,8 @@ export function UserTable() {
   const [search, setSearch] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"insights" | "library" | "feedback">("insights");
+  const [insightLanguage, setInsightLanguage] = useState<"en" | "hi">("en");
+  const [expandedInsightKey, setExpandedInsightKey] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<"firstName" | "email" | "language" | "state" | "age">(
     "firstName"
   );
@@ -348,8 +350,32 @@ export function UserTable() {
                   transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <Card className="transition-shadow duration-300">
-                    <CardHeader>
+                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <CardTitle>All Insights</CardTitle>
+                      <div className="inline-flex items-center rounded-full border border-slate-700/70 bg-slate-900/70 p-1">
+                        <button
+                          type="button"
+                          onClick={() => setInsightLanguage("en")}
+                          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                            insightLanguage === "en"
+                              ? "bg-indigo-500/20 text-indigo-200"
+                              : "text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          English
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setInsightLanguage("hi")}
+                          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                            insightLanguage === "hi"
+                              ? "bg-indigo-500/20 text-indigo-200"
+                              : "text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          Hindi
+                        </button>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {selectedUserDetail.dailyInsights.length > 0 ? (
@@ -380,20 +406,39 @@ export function UserTable() {
 
                             const categoryRows = [
                               {
+                                key: "overall",
+                                title: "Overall",
+                                score: overall?.overall_score,
+                                reading_en: overall?.overall_reading_en,
+                                reading_hi: overall?.overall_reading_hi,
+                              },
+                              {
+                                key: "career",
                                 title: "Career",
-                                data: categories.career,
+                                score: categories.career?.score,
+                                reading_en: categories.career?.reading_en,
+                                reading_hi: categories.career?.reading_hi,
                               },
                               {
+                                key: "relationships",
                                 title: "Relationships",
-                                data: categories.relationships ?? categories.relationship,
+                                score: (categories.relationships ?? categories.relationship)?.score,
+                                reading_en: (categories.relationships ?? categories.relationship)?.reading_en,
+                                reading_hi: (categories.relationships ?? categories.relationship)?.reading_hi,
                               },
                               {
+                                key: "health",
                                 title: "Health",
-                                data: categories.health,
+                                score: categories.health?.score,
+                                reading_en: categories.health?.reading_en,
+                                reading_hi: categories.health?.reading_hi,
                               },
                               {
+                                key: "finance",
                                 title: "Finance",
-                                data: categories.finance ?? categories.finances,
+                                score: (categories.finance ?? categories.finances)?.score,
+                                reading_en: (categories.finance ?? categories.finances)?.reading_en,
+                                reading_hi: (categories.finance ?? categories.finances)?.reading_hi,
                               },
                             ];
 
@@ -434,54 +479,42 @@ export function UserTable() {
                                     {formatLuckyNumbers(insight.lucky_number ?? overall?.lucky_number)}
                                   </p>
                                 </div>
-                                <div className="mt-3 space-y-2 rounded-lg border border-slate-700/50 bg-slate-950/70 p-3">
-                                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                    Overall
-                                  </p>
-                                  <p className="text-sm text-slate-300">
-                                    <span className="mr-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500">
-                                      EN
-                                    </span>
-                                    {overall?.overall_reading_en ?? "-"}
-                                  </p>
-                                  <p className="text-sm text-slate-300">
-                                    <span className="mr-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500">
-                                      HI
-                                    </span>
-                                    {overall?.overall_reading_hi ?? "-"}
-                                  </p>
-                                </div>
-
                                 <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-                                  {categoryRows.map((section) => (
-                                    <div
-                                      key={section.title}
-                                      className="rounded-lg border border-slate-700/50 bg-slate-950/70 p-3"
-                                    >
-                                      <div className="mb-2 flex items-center justify-between gap-2">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                          {section.title}
-                                        </p>
-                                        {typeof section.data?.score === "number" ? (
-                                          <span className="rounded-full border border-slate-700/60 bg-slate-800/80 px-2 py-0.5 text-[0.68rem] font-medium text-slate-300">
-                                            {section.data.score}
-                                          </span>
+                                  {categoryRows.map((section) => {
+                                    const rowKey = `${insight.id}:${section.key}`;
+                                    const isOpen = expandedInsightKey === rowKey;
+                                    const reading =
+                                      insightLanguage === "en" ? section.reading_en : section.reading_hi;
+                                    return (
+                                      <div
+                                        key={rowKey}
+                                        className="rounded-lg border border-slate-700/50 bg-slate-950/70 p-3"
+                                      >
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setExpandedInsightKey((prev) => (prev === rowKey ? null : rowKey))
+                                          }
+                                          className="flex w-full items-center justify-between gap-2 text-left"
+                                        >
+                                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                            {section.title}
+                                          </p>
+                                          <div className="flex items-center gap-2">
+                                            {typeof section.score === "number" ? (
+                                              <span className="rounded-full border border-slate-700/60 bg-slate-800/80 px-2 py-0.5 text-[0.68rem] font-medium text-slate-300">
+                                                {section.score}
+                                              </span>
+                                            ) : null}
+                                            <span className="text-xs text-slate-500">{isOpen ? "Hide" : "Show"}</span>
+                                          </div>
+                                        </button>
+                                        {isOpen ? (
+                                          <p className="mt-2 text-sm text-slate-300">{reading ?? "-"}</p>
                                         ) : null}
                                       </div>
-                                      <p className="text-sm text-slate-300">
-                                        <span className="mr-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500">
-                                          EN
-                                        </span>
-                                        {section.data?.reading_en ?? "-"}
-                                      </p>
-                                      <p className="mt-1.5 text-sm text-slate-300">
-                                        <span className="mr-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500">
-                                          HI
-                                        </span>
-                                        {section.data?.reading_hi ?? "-"}
-                                      </p>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               </motion.li>
                             );
