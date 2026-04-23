@@ -50,6 +50,7 @@ function formatDateTime(value: unknown): string {
 }
 
 function formatLuckyNumbers(value: unknown): string {
+  if (typeof value === "number" || typeof value === "string") return String(value);
   if (!Array.isArray(value)) return "-";
   const nums = value
     .map((n) => (typeof n === "number" || typeof n === "string" ? String(n) : ""))
@@ -354,9 +355,47 @@ export function UserTable() {
                       {selectedUserDetail.dailyInsights.length > 0 ? (
                         <ul className="space-y-3">
                           {selectedUserDetail.dailyInsights.map((insight, i) => {
-                            const overallReading = (
-                              insight.aiDashboard as { overall_dashboard?: { overall_reading_en?: string } } | undefined
-                            )?.overall_dashboard?.overall_reading_en;
+                            const aiDashboard = insight.aiDashboard as
+                              | {
+                                  overall_dashboard?: {
+                                    overall_score?: number;
+                                    overall_reading_en?: string;
+                                    overall_reading_hi?: string;
+                                    lucky_color_en?: string;
+                                    lucky_color_hi?: string;
+                                    lucky_number?: number | string | Array<number | string>;
+                                  };
+                                  categories?: Record<
+                                    string,
+                                    {
+                                      score?: number;
+                                      reading_en?: string;
+                                      reading_hi?: string;
+                                    }
+                                  >;
+                                }
+                              | undefined;
+                            const overall = aiDashboard?.overall_dashboard;
+                            const categories = aiDashboard?.categories ?? {};
+
+                            const categoryRows = [
+                              {
+                                title: "Career",
+                                data: categories.career,
+                              },
+                              {
+                                title: "Relationships",
+                                data: categories.relationships ?? categories.relationship,
+                              },
+                              {
+                                title: "Health",
+                                data: categories.health,
+                              },
+                              {
+                                title: "Finance",
+                                data: categories.finance ?? categories.finances,
+                              },
+                            ];
 
                             return (
                               <motion.li
@@ -370,23 +409,80 @@ export function UserTable() {
                                   <p className="text-sm font-medium text-slate-200">
                                     {insight.date || "Unknown date"}
                                   </p>
-                                  <span className="rounded-full border border-slate-700/60 bg-slate-800/80 px-2 py-0.5 text-[0.68rem] font-medium text-slate-300">
-                                    Insight
-                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    {typeof overall?.overall_score === "number" ? (
+                                      <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 text-[0.68rem] font-medium text-indigo-200">
+                                        Score {overall.overall_score}
+                                      </span>
+                                    ) : null}
+                                    <span className="rounded-full border border-slate-700/60 bg-slate-800/80 px-2 py-0.5 text-[0.68rem] font-medium text-slate-300">
+                                      Insight
+                                    </span>
+                                  </div>
                                 </div>
                                 <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-slate-400 sm:grid-cols-2">
                                   <p>
                                     <span className="font-semibold text-slate-300">Lucky color:</span>{" "}
-                                    {insight.lucky_color ?? insight.lucky_color_hi ?? "-"}
+                                    {insight.lucky_color ??
+                                      overall?.lucky_color_en ??
+                                      insight.lucky_color_hi ??
+                                      overall?.lucky_color_hi ??
+                                      "-"}
                                   </p>
                                   <p>
                                     <span className="font-semibold text-slate-300">Lucky numbers:</span>{" "}
-                                    {formatLuckyNumbers(insight.lucky_number)}
+                                    {formatLuckyNumbers(insight.lucky_number ?? overall?.lucky_number)}
                                   </p>
                                 </div>
-                                <p className="mt-2 rounded-lg border border-slate-700/50 bg-slate-950/70 p-2.5 text-sm text-slate-300">
-                                  {overallReading ?? "Insight content available in dashboard payload."}
-                                </p>
+                                <div className="mt-3 space-y-2 rounded-lg border border-slate-700/50 bg-slate-950/70 p-3">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                    Overall
+                                  </p>
+                                  <p className="text-sm text-slate-300">
+                                    <span className="mr-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500">
+                                      EN
+                                    </span>
+                                    {overall?.overall_reading_en ?? "-"}
+                                  </p>
+                                  <p className="text-sm text-slate-300">
+                                    <span className="mr-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500">
+                                      HI
+                                    </span>
+                                    {overall?.overall_reading_hi ?? "-"}
+                                  </p>
+                                </div>
+
+                                <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+                                  {categoryRows.map((section) => (
+                                    <div
+                                      key={section.title}
+                                      className="rounded-lg border border-slate-700/50 bg-slate-950/70 p-3"
+                                    >
+                                      <div className="mb-2 flex items-center justify-between gap-2">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                          {section.title}
+                                        </p>
+                                        {typeof section.data?.score === "number" ? (
+                                          <span className="rounded-full border border-slate-700/60 bg-slate-800/80 px-2 py-0.5 text-[0.68rem] font-medium text-slate-300">
+                                            {section.data.score}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      <p className="text-sm text-slate-300">
+                                        <span className="mr-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500">
+                                          EN
+                                        </span>
+                                        {section.data?.reading_en ?? "-"}
+                                      </p>
+                                      <p className="mt-1.5 text-sm text-slate-300">
+                                        <span className="mr-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500">
+                                          HI
+                                        </span>
+                                        {section.data?.reading_hi ?? "-"}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
                               </motion.li>
                             );
                           })}
