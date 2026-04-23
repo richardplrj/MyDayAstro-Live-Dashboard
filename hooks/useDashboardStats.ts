@@ -137,6 +137,24 @@ function normalizeFirestoreError(error: unknown): string {
   return "Failed to load dashboard data.";
 }
 
+function normalizeFeedbackResponse(value: unknown): "helpful" | "not-helpful" | null {
+  if (typeof value === "boolean") return value ? "helpful" : "not-helpful";
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase().replace(/[_\s]+/g, "-");
+  if (normalized === "helpful" || normalized === "yes" || normalized === "true") {
+    return "helpful";
+  }
+  if (
+    normalized === "not-helpful" ||
+    normalized === "nothelpful" ||
+    normalized === "no" ||
+    normalized === "false"
+  ) {
+    return "not-helpful";
+  }
+  return null;
+}
+
 export function useDashboardStats(): DashboardStatsResult {
   const [totalUsers, setTotalUsers] = useState(0);
   const [stateData, setStateData] = useState<StateData[]>([]);
@@ -259,14 +277,15 @@ export function useDashboardStats(): DashboardStatsResult {
 
         snapshot.docs.forEach((docSnap) => {
           const feedback = docSnap.data() as Partial<InsightFeedback>;
-          if (feedback.Daily === "helpful") nextStats.Daily += 1;
-          if (feedback.Relationships === "helpful") nextStats.Relationships += 1;
-          if (feedback.Health === "helpful") nextStats.Health += 1;
-          if (feedback.Finances === "helpful") nextStats.Finances += 1;
-          if (feedback.Career === "helpful") nextStats.Career += 1;
+          if (normalizeFeedbackResponse(feedback.Daily) === "helpful") nextStats.Daily += 1;
+          if (normalizeFeedbackResponse(feedback.Relationships) === "helpful")
+            nextStats.Relationships += 1;
+          if (normalizeFeedbackResponse(feedback.Health) === "helpful") nextStats.Health += 1;
+          if (normalizeFeedbackResponse(feedback.Finances) === "helpful") nextStats.Finances += 1;
+          if (normalizeFeedbackResponse(feedback.Career) === "helpful") nextStats.Career += 1;
 
           for (const key of INSIGHT_CATEGORY_KEYS) {
-            const v = feedback[key];
+            const v = normalizeFeedbackResponse(feedback[key]);
             if (v === "helpful") totals.helpful += 1;
             else if (v === "not-helpful") totals.notHelpful += 1;
             else totals.unset += 1;
@@ -290,8 +309,9 @@ export function useDashboardStats(): DashboardStatsResult {
         const totals: ExitFeedbackTotals = { helpful: 0, notHelpful: 0 };
         snapshot.docs.forEach((docSnap) => {
           const data = docSnap.data() as { response?: string };
-          if (data.response === "helpful") totals.helpful += 1;
-          else if (data.response === "not-helpful") totals.notHelpful += 1;
+          const normalized = normalizeFeedbackResponse(data.response);
+          if (normalized === "helpful") totals.helpful += 1;
+          else if (normalized === "not-helpful") totals.notHelpful += 1;
         });
         setExitFeedbackTotals(totals);
         setExitFeedbackLoaded(true);
