@@ -517,7 +517,7 @@ export function UserTable() {
                                       </div>
                                     </div>
 
-                                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                    <div className="flex flex-wrap gap-2">
                                       {selectedInsight.sections.map((section) => {
                                         const rowKey = `${selectedInsight.id}:${section.key}`;
                                         const isOpen = expandedInsightKey === rowKey;
@@ -526,7 +526,7 @@ export function UserTable() {
                                         return (
                                           <div
                                             key={rowKey}
-                                            className="rounded-lg border border-slate-700/60 bg-slate-950/70 p-3"
+                                            className="w-full self-start rounded-lg border border-slate-700/60 bg-slate-950/70 p-3 sm:w-[calc(50%-0.25rem)] lg:w-[calc(33.333%-0.34rem)]"
                                           >
                                             <button
                                               type="button"
