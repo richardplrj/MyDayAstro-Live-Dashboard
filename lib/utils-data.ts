@@ -2,15 +2,40 @@ import { differenceInYears, isValid, parse } from "date-fns";
 
 import type { FirebaseTimestamp } from "../types/user";
 
-export function toJSDate(
-  timestamp?: FirebaseTimestamp | null
-): Date | null {
+type FirestoreLikeTimestamp =
+  | FirebaseTimestamp
+  | { seconds: number; nanoseconds: number }
+  | { toDate: () => Date };
+
+export function toJSDate(timestamp?: FirestoreLikeTimestamp | string | number | null): Date | null {
   if (!timestamp) return null;
 
-  const milliseconds =
-    timestamp._seconds * 1000 + Math.floor(timestamp._nanoseconds / 1_000_000);
+  if (typeof timestamp === "string" || typeof timestamp === "number") {
+    const date = new Date(timestamp);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
 
-  return new Date(milliseconds);
+  if ("toDate" in timestamp && typeof timestamp.toDate === "function") {
+    const date = timestamp.toDate();
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  let seconds: number | undefined;
+  let nanos: number | undefined;
+
+  if ("_seconds" in timestamp && "_nanoseconds" in timestamp) {
+    seconds = timestamp._seconds;
+    nanos = timestamp._nanoseconds;
+  } else if ("seconds" in timestamp && "nanoseconds" in timestamp) {
+    seconds = timestamp.seconds;
+    nanos = timestamp.nanoseconds;
+  }
+
+  if (typeof seconds !== "number" || typeof nanos !== "number") return null;
+
+  const milliseconds = seconds * 1000 + Math.floor(nanos / 1_000_000);
+  const date = new Date(milliseconds);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export function calculateAge(dobString: string | undefined | null): number {

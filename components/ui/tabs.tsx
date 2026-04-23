@@ -31,7 +31,7 @@ export function TabsTrigger({ active = false, onClick, children }: TabsTriggerPr
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.97 }}
       transition={springSnappy}
-      className={`relative rounded-md px-3 py-1.5 text-sm transition-colors duration-200 ${
+      className={`relative cursor-pointer rounded-md px-3 py-1.5 text-sm transition-colors duration-200 ${
         active ? "text-slate-100" : "text-slate-400 hover:text-slate-200"
       }`}
     >

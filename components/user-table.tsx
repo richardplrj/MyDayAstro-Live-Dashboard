@@ -499,7 +499,7 @@ export function UserTable() {
                         <button
                           type="button"
                           onClick={() => setInsightLanguage("en")}
-                          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                          className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                             insightLanguage === "en"
                               ? "bg-indigo-500/20 text-indigo-200"
                               : "text-slate-400 hover:text-slate-200"
@@ -510,7 +510,7 @@ export function UserTable() {
                         <button
                           type="button"
                           onClick={() => setInsightLanguage("hi")}
-                          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                          className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                             insightLanguage === "hi"
                               ? "bg-indigo-500/20 text-indigo-200"
                               : "text-slate-400 hover:text-slate-200"
@@ -534,7 +534,7 @@ export function UserTable() {
                                     setSelectedInsightId(insight.id);
                                     setExpandedInsightKey(null);
                                   }}
-                                  className={`w-full rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                                  className={`w-full cursor-pointer rounded-lg border px-3 py-2.5 text-left transition-colors ${
                                     selected
                                       ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-100"
                                       : "border-slate-700/60 bg-slate-900/70 text-slate-300 hover:border-slate-600 hover:bg-slate-900"
@@ -588,7 +588,7 @@ export function UserTable() {
                                               onClick={() =>
                                                 setExpandedInsightKey((prev) => (prev === rowKey ? null : rowKey))
                                               }
-                                              className="flex w-full items-center justify-between gap-2 text-left"
+                                              className="flex w-full cursor-pointer items-center justify-between gap-2 text-left"
                                             >
                                               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                                                 {section.title}
@@ -635,7 +635,7 @@ export function UserTable() {
                         <button
                           type="button"
                           onClick={() => setSavedReadingLanguage("en")}
-                          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                          className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                             savedReadingLanguage === "en"
                               ? "bg-indigo-500/20 text-indigo-200"
                               : "text-slate-400 hover:text-slate-200"
@@ -646,7 +646,7 @@ export function UserTable() {
                         <button
                           type="button"
                           onClick={() => setSavedReadingLanguage("hi")}
-                          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                          className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                             savedReadingLanguage === "hi"
                               ? "bg-indigo-500/20 text-indigo-200"
                               : "text-slate-400 hover:text-slate-200"
@@ -669,7 +669,7 @@ export function UserTable() {
                                   key={reading.id}
                                   type="button"
                                   onClick={() => setSelectedSavedReadingId(reading.id)}
-                                  className={`w-full rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                                  className={`w-full cursor-pointer rounded-lg border px-3 py-2.5 text-left transition-colors ${
                                     selected
                                       ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-100"
                                       : "border-slate-700/60 bg-slate-900/70 text-slate-300 hover:border-slate-600 hover:bg-slate-900"
@@ -741,7 +741,7 @@ export function UserTable() {
                             key={key}
                             type="button"
                             onClick={() => setFeedbackFilter(key)}
-                            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                            className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                               feedbackFilter === key
                                 ? "bg-indigo-500/20 text-indigo-200"
                                 : "text-slate-400 hover:text-slate-200"
