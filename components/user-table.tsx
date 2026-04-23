@@ -72,13 +72,13 @@ function renderFormattedInsightText(text: string): ReactNode {
   );
 }
 
-function formatInsightFeedbackSummary(item: {
+function buildInsightFeedbackChips(item: {
   Daily?: string | null;
   Relationships?: string | null;
   Career?: string | null;
   Health?: string | null;
   Finances?: string | null;
-}): string | null {
+}): Array<{ label: string; status: "Helpful" | "Not Helpful" }> {
   const categoryMap: Array<{ label: string; value: string | null | undefined }> = [
     { label: "Daily", value: item.Daily },
     { label: "Relationships", value: item.Relationships },
@@ -86,19 +86,12 @@ function formatInsightFeedbackSummary(item: {
     { label: "Health", value: item.Health },
     { label: "Finance", value: item.Finances },
   ];
-
-  const helpful = categoryMap
-    .filter((c) => c.value === "helpful")
-    .map((c) => c.label);
-  const notHelpful = categoryMap
-    .filter((c) => c.value === "not-helpful")
-    .map((c) => c.label);
-
-  const parts: string[] = [];
-  if (helpful.length > 0) parts.push(`Helpful: ${helpful.join(", ")}`);
-  if (notHelpful.length > 0) parts.push(`Not helpful: ${notHelpful.join(", ")}`);
-
-  return parts.length > 0 ? parts.join(" • ") : null;
+  return categoryMap
+    .filter((c) => c.value === "helpful" || c.value === "not-helpful")
+    .map((c) => ({
+      label: c.label,
+      status: c.value === "helpful" ? ("Helpful" as const) : ("Not Helpful" as const),
+    }));
 }
 
 export function UserTable() {
@@ -186,17 +179,19 @@ export function UserTable() {
       createdAt: rating.createdAt,
       label: `Daily Rating ${rating.rating}/5`,
       subLabel: `Prompt: ${rating.promptType || "-"}`,
+      chips: [] as Array<{ label: string; status: "Helpful" | "Not Helpful" }>,
     }));
     const feedback = selectedUserDetail.insightFeedback
       .map((item) => {
-        const summary = formatInsightFeedbackSummary(item);
-        if (!summary) return null;
+        const chips = buildInsightFeedbackChips(item);
+        if (chips.length === 0) return null;
         return {
           id: `insight-${item.id}`,
           type: "insight" as const,
           createdAt: item.updatedAt,
           label: "Insight Feedback",
-          subLabel: summary,
+          subLabel: "",
+          chips,
         };
       })
       .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
@@ -206,6 +201,7 @@ export function UserTable() {
       createdAt: item.createdAt,
       label: "Exit Feedback",
       subLabel: item.response === "not-helpful" ? "Not helpful" : "Helpful",
+      chips: [] as Array<{ label: string; status: "Helpful" | "Not Helpful" }>,
     }));
     return [...ratings, ...feedback, ...exit].sort((a, b) => {
       const aDate = toJSDate(a.createdAt)?.getTime() ?? 0;
@@ -821,7 +817,24 @@ export function UserTable() {
                                         : "Exit"}
                                   </span>
                                 </div>
-                                <p className="mt-1 text-xs leading-relaxed text-slate-400">{entry.subLabel}</p>
+                                {entry.type === "insight" ? (
+                                  <div className="mt-1 flex flex-wrap gap-1.5">
+                                    {entry.chips.map((chip, chipIndex) => (
+                                      <span
+                                        key={`${entry.id}-chip-${chip.label}-${chipIndex}`}
+                                        className={`rounded-full border px-2 py-0.5 text-[0.68rem] font-medium ${
+                                          chip.status === "Helpful"
+                                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                                            : "border-rose-500/30 bg-rose-500/10 text-rose-200"
+                                        }`}
+                                      >
+                                        {chip.label}: {chip.status}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="mt-1 text-xs leading-relaxed text-slate-400">{entry.subLabel}</p>
+                                )}
                                 <p className="mt-1.5 text-xs text-slate-500">
                                   {formatDateTime(entry.createdAt)}
                                 </p>
