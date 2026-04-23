@@ -72,6 +72,35 @@ function renderFormattedInsightText(text: string): ReactNode {
   );
 }
 
+function formatInsightFeedbackSummary(item: {
+  Daily?: string | null;
+  Relationships?: string | null;
+  Career?: string | null;
+  Health?: string | null;
+  Finances?: string | null;
+}): string | null {
+  const categoryMap: Array<{ label: string; value: string | null | undefined }> = [
+    { label: "Daily", value: item.Daily },
+    { label: "Relationships", value: item.Relationships },
+    { label: "Career", value: item.Career },
+    { label: "Health", value: item.Health },
+    { label: "Finance", value: item.Finances },
+  ];
+
+  const helpful = categoryMap
+    .filter((c) => c.value === "helpful")
+    .map((c) => c.label);
+  const notHelpful = categoryMap
+    .filter((c) => c.value === "not-helpful")
+    .map((c) => c.label);
+
+  const parts: string[] = [];
+  if (helpful.length > 0) parts.push(`Helpful: ${helpful.join(", ")}`);
+  if (notHelpful.length > 0) parts.push(`Not helpful: ${notHelpful.join(", ")}`);
+
+  return parts.length > 0 ? parts.join(" • ") : null;
+}
+
 export function UserTable() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -158,19 +187,19 @@ export function UserTable() {
       label: `Daily Rating ${rating.rating}/5`,
       subLabel: `Prompt: ${rating.promptType || "-"}`,
     }));
-    const feedback = selectedUserDetail.insightFeedback.map((item) => ({
-      id: `insight-${item.id}`,
-      type: "insight" as const,
-      createdAt: item.updatedAt,
-      label: "Insight Feedback",
-      subLabel: [
-        `Daily: ${item.Daily ?? "-"}`,
-        `Relationships: ${item.Relationships ?? "-"}`,
-        `Career: ${item.Career ?? "-"}`,
-        `Health: ${item.Health ?? "-"}`,
-        `Finance: ${item.Finances ?? "-"}`,
-      ].join(" • "),
-    }));
+    const feedback = selectedUserDetail.insightFeedback
+      .map((item) => {
+        const summary = formatInsightFeedbackSummary(item);
+        if (!summary) return null;
+        return {
+          id: `insight-${item.id}`,
+          type: "insight" as const,
+          createdAt: item.updatedAt,
+          label: "Insight Feedback",
+          subLabel: summary,
+        };
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
     const exit = selectedUserDetail.exitFeedback.map((item) => ({
       id: `exit-${item.id}`,
       type: "exit" as const,
