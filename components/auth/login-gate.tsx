@@ -8,7 +8,11 @@ import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { auth } from "../../lib/firebase";
 import { springSnappy, springSoft } from "../../lib/motion-presets";
 
-const ADMIN_EMAILS = ["richardplrj@gmail.com", "ajay.shembekar@gmail.com"] as const;
+const ADMIN_EMAILS = [
+  "richardplrj@gmail.com",
+  "ajay.shembekar@gmail.com",
+  "kanchanmsk@gmail.com",
+] as const;
 
 function normalizeEmail(email: string | null | undefined): string {
   return (email ?? "").trim().toLowerCase();
