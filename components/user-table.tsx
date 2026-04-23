@@ -523,7 +523,7 @@ export function UserTable() {
                     <CardContent className="space-y-3">
                       {parsedInsights.length > 0 ? (
                         <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
-                          <div className="space-y-2">
+                          <div className="max-h-[min(60vh,520px)] space-y-2 overflow-y-auto pr-1">
                             {parsedInsights.map((insight) => {
                               const selected = selectedInsightId === insight.id;
                               return (
@@ -661,7 +661,7 @@ export function UserTable() {
                         <p className="py-10 text-center text-sm text-slate-500">No Saved Readings Yet</p>
                       ) : (
                         <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
-                          <div className="space-y-2">
+                          <div className="max-h-[min(60vh,520px)] space-y-2 overflow-y-auto pr-1">
                             {parsedSavedReadings.map((reading) => {
                               const selected = selectedSavedReadingId === reading.id;
                               return (
