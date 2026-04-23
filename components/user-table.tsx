@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { MessageSquareText, Star, ThumbsUp } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, type ReactNode, useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 
 import { useUserDetail } from "../hooks/useUserDetail";
@@ -58,6 +58,20 @@ function formatLuckyNumbers(value: unknown): string {
   return nums.length ? nums.join(", ") : "-";
 }
 
+function renderFormattedInsightText(text: string): ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+        }
+        return <Fragment key={`${part}-${index}`}>{part}</Fragment>;
+      })}
+    </>
+  );
+}
+
 export function UserTable() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -68,6 +82,8 @@ export function UserTable() {
   const [insightLanguage, setInsightLanguage] = useState<"en" | "hi">("en");
   const [expandedInsightKey, setExpandedInsightKey] = useState<string | null>(null);
   const [selectedInsightId, setSelectedInsightId] = useState<string | null>(null);
+  const [savedReadingLanguage, setSavedReadingLanguage] = useState<"en" | "hi">("en");
+  const [selectedSavedReadingId, setSelectedSavedReadingId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<"firstName" | "email" | "language" | "state" | "age">(
     "firstName"
   );
@@ -239,6 +255,22 @@ export function UserTable() {
     });
   }, [selectedUserDetail.dailyInsights]);
 
+  const parsedSavedReadings = useMemo(() => {
+    return [...selectedUserDetail.savedReadings]
+      .sort((a, b) => {
+        const aTime = toJSDate(a.createdAt)?.getTime() ?? 0;
+        const bTime = toJSDate(b.createdAt)?.getTime() ?? 0;
+        return bTime - aTime;
+      })
+      .map((reading) => ({
+        id: reading.id,
+        readingType: reading.readingType ?? "Saved Reading",
+        savedAtLabel: formatDateTime(reading.createdAt) || "-",
+        contentEn: reading.contentEn ?? "",
+        contentHi: reading.contentHi ?? "",
+      }));
+  }, [selectedUserDetail.savedReadings]);
+
   useEffect(() => {
     if (parsedInsights.length === 0) {
       setSelectedInsightId(null);
@@ -250,6 +282,19 @@ export function UserTable() {
       setExpandedInsightKey(null);
     }
   }, [parsedInsights, selectedInsightId]);
+
+  useEffect(() => {
+    if (parsedSavedReadings.length === 0) {
+      setSelectedSavedReadingId(null);
+      return;
+    }
+    if (
+      !selectedSavedReadingId ||
+      !parsedSavedReadings.some((reading) => reading.id === selectedSavedReadingId)
+    ) {
+      setSelectedSavedReadingId(parsedSavedReadings[0].id);
+    }
+  }, [parsedSavedReadings, selectedSavedReadingId]);
 
   const requestSort = (key: typeof sortKey) => {
     if (sortKey === key) {
@@ -544,7 +589,9 @@ export function UserTable() {
                                             </button>
                                             {isOpen ? (
                                               <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                                                {reading ?? "-"}
+                                                {reading
+                                                  ? renderFormattedInsightText(reading)
+                                                  : "-"}
                                               </p>
                                             ) : null}
                                           </div>
@@ -572,30 +619,90 @@ export function UserTable() {
                   transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <Card className="transition-shadow duration-300">
-                    <CardHeader>
+                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <CardTitle>Saved Readings</CardTitle>
+                      <div className="inline-flex items-center rounded-full border border-slate-700/70 bg-slate-900/70 p-1">
+                        <button
+                          type="button"
+                          onClick={() => setSavedReadingLanguage("en")}
+                          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                            savedReadingLanguage === "en"
+                              ? "bg-indigo-500/20 text-indigo-200"
+                              : "text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          English
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSavedReadingLanguage("hi")}
+                          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                            savedReadingLanguage === "hi"
+                              ? "bg-indigo-500/20 text-indigo-200"
+                              : "text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          Hindi
+                        </button>
+                      </div>
                     </CardHeader>
                     <CardContent>
-                      {selectedUserDetail.savedReadings.length === 0 ? (
+                      {parsedSavedReadings.length === 0 ? (
                         <p className="py-10 text-center text-sm text-slate-500">No Saved Readings Yet</p>
                       ) : (
-                        <ul className="space-y-2">
-                          {selectedUserDetail.savedReadings.map((reading, i) => (
-                            <motion.li
-                              key={reading.id}
-                              initial={{ opacity: 0, y: 6 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: i * 0.04, ...springSoft }}
-                              whileHover={{ x: 2, transition: { duration: 0.18 } }}
-                              className="rounded-lg border border-slate-700/50 bg-slate-900 p-3"
-                            >
-                              <p className="text-sm font-medium text-slate-200">{reading.readingType}</p>
-                              <p className="text-xs text-slate-500">
-                                Date Saved: {formatTimestamp(reading.createdAt)}
-                              </p>
-                            </motion.li>
-                          ))}
-                        </ul>
+                        <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+                          <div className="space-y-2">
+                            {parsedSavedReadings.map((reading) => {
+                              const selected = selectedSavedReadingId === reading.id;
+                              return (
+                                <button
+                                  key={reading.id}
+                                  type="button"
+                                  onClick={() => setSelectedSavedReadingId(reading.id)}
+                                  className={`w-full rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                                    selected
+                                      ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-100"
+                                      : "border-slate-700/60 bg-slate-900/70 text-slate-300 hover:border-slate-600 hover:bg-slate-900"
+                                  }`}
+                                >
+                                  <p className="text-sm font-medium">{reading.readingType}</p>
+                                  <p className="mt-1 text-xs text-slate-400">{reading.savedAtLabel}</p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {selectedSavedReadingId ? (
+                            <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-3">
+                              {(() => {
+                                const selectedReading = parsedSavedReadings.find(
+                                  (item) => item.id === selectedSavedReadingId
+                                );
+                                if (!selectedReading) return null;
+                                const content =
+                                  savedReadingLanguage === "en"
+                                    ? selectedReading.contentEn
+                                    : selectedReading.contentHi;
+                                return (
+                                  <div className="space-y-3">
+                                    <div className="rounded-lg border border-slate-700/60 bg-slate-950/70 px-3 py-2">
+                                      <p className="text-sm font-medium text-slate-200">
+                                        {selectedReading.readingType}
+                                      </p>
+                                      <p className="mt-1 text-xs text-slate-400">
+                                        Saved: {selectedReading.savedAtLabel}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-700/60 bg-slate-950/70 p-3">
+                                      <p className="text-sm leading-relaxed text-slate-300">
+                                        {content || "No reading content available."}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          ) : null}
+                        </div>
                       )}
                     </CardContent>
                   </Card>
